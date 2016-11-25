@@ -1,0 +1,22 @@
+
+
+REMOTE REGISTRY pOWERSHELL SCRIPT
+
+1.User should have Domain Admins rights to all SystemS to run the script.
+2.tested and works on all Operating System
+-----------------------------------------------------------------------------------------------------------------------------------
+cls 
+$computers =  get-content -path "C:\Scripts\Remote Registry\ListofComputernames.txt" 
+foreach ($computer in $computers) 
+{ 
+if (Test-Connection -count 1 -computer $computer -quiet){ 
+Write-Host "Updating system" $computer "....." -ForegroundColor Green 
+Set-Service –Name remoteregistry –Computer $computer -StartupType Automatic 
+Get-Service remoteregistry -ComputerName $computer | start-service 
+} 
+else 
+{ 
+Write-Host "System Offline " $computer "....." -ForegroundColor Red 
+echo $computer >> C:\scripts\offlineRemoteRegStartup.txt} 
+}
+
