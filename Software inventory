@@ -1,0 +1,220 @@
+Steps for running the software inventory
+
+This Scripts collects both 32 bit and 64 bit from Registry 
+Requirement
+Powershell script v3 or greater
+Script to check Powershell version
+
+host
+
+PS C:\Windows\system32> host
+
+Name             : ConsoleHost
+Version          : 4.0
+InstanceId       : 00f33b3e-9daa-40bf-84f0-33d3af8ac24c
+UI               : System.Management.Automation.Internal.Host.InternalHos
+CurrentCulture   : en-IN
+CurrentUICulture : en-US
+PrivateData      : Microsoft.PowerShell.ConsoleHost+ConsoleColorProxy
+IsRunspacePushed : False
+Runspace         : System.Management.Automation.Runspaces.LocalRunspace
+
+Run the below command before running any Powershell script.
+Open Powershell or Powershell ISE by Run as Administrator
+PS C:\Windows\system32> set-executionpolicy -scope LocalMachine -executionPolicy unrestricted -force
+PS C:\Windows\system32> set-executionpolicy -scope Currentuser -executionPolicy unrestricted -force
+
+
+1)check the machines which are online and offline by running the powershell Script
+2)Run the Remote registry script and start the Remote registry service ..Without this step the software inventory script will not open the remote registry of the systems
+3)Load the software inventory script 1 in Powershell ISE before the runnning software inventory 2--Always make sure that Software inventory 1 is loaded 
+in Powershell ISE gefore running the Software inventory 2
+4)Load  another software iventory script 2 in powershell ISE and run it..This script will have input and and output path file of the list of host..
+5)After running the  software inventory the list of for 100 systems and not output will have 100 seperate excel files.Now
+run the BAT file to combine all CSV file into a single file..
+6)Now each excel fill have the hostname mentioned  as excel file name and will have neat list of all software from the system.
+
+
+This Procedure or Script works on Windows XP,VISA,Windows 8,Windows 10,Windows server 2003,Windows 2008,Windows 2012.
+This is one safest way of getting the software inventory without any issue to the systems and its fast since it querring the registry and not WMI class.
+
+
+Note:Csv file with zero KB means it has not inventoried because machines might went offline or remote registry service is not started 
+or you might not have access to the machines..Delete the CSV files with Zero KB and check the hosts again and rerun the process.
+
+
+--------------------------------------------------------------------------------------------------------------------------------
+1)Ping Status
+--------------------------------------------------------------------------------------------------------------------------------
+
+Get-Content C:\Scripts\RemoteComputers.txt | ForEach-Object{
+$pingstatus = ""
+IF (Test-Connection -BufferSize 32 -Count 1 -ComputerName $_ -Quiet) {
+        $pingstatus = "Online"
+} Else {
+        $pingstatus = "Offline"
+}
+
+New-Object -TypeName PSObject -Property @{
+      Computer = $_
+      Status = $pingstatus }
+} | Export-Csv C:\Scripts\PingStatus.csv -NoTypeInformation -Encoding UTF8
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+2)Remote registry
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+cls 
+$computers =  get-content -path "C:\Scripts\Remote Registry\ListofComputernames.txt" 
+foreach ($computer in $computers) 
+{ 
+if (Test-Connection -count 1 -computer $computer -quiet){ 
+Write-Host "Updating system" $computer "....." -ForegroundColor Green 
+Set-Service –Name remoteregistry –Computer $computer -StartupType Automatic 
+Get-Service remoteregistry -ComputerName $computer | start-service 
+} 
+else 
+{ 
+Write-Host "System Offline " $computer "....." -ForegroundColor Red 
+echo $computer >> C:\scripts\offlineRemoteRegStartup.txt} 
+}
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------
+3)SOFTWARE INVENTORY 1
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Function Get-InstalledSoftware{
+    Param([String[]]$Computers)
+    If (!$Computers) {$Computers = $ENV:ComputerName}
+    $Base = New-Object PSObject;
+    $Base | Add-Member Noteproperty ComputerName -Value $Null;
+    $Base | Add-Member Noteproperty Name -Value $Null;
+    $Base | Add-Member Noteproperty Publisher -Value $Null;
+    $Base | Add-Member Noteproperty InstallDate -Value $Null;
+    $Base | Add-Member Noteproperty EstimatedSize -Value $Null;
+    $Base | Add-Member Noteproperty Version -Value $Null;
+    $Results =  New-Object System.Collections.Generic.List[System.Object];
+ 
+    ForEach ($ComputerName in $Computers){
+        $Registry = $Null;
+        Try{$Registry = [Microsoft.Win32.RegistryKey]::OpenRemoteBaseKey([Microsoft.Win32.RegistryHive]::LocalMachine,$ComputerName);}
+        Catch{Write-Host -ForegroundColor Red "$($_.Exception.Message)";}
+ 
+        If ($Registry){
+            $UninstallKeys = $Null;
+            $SubKey = $Null;
+            $UninstallKeys = $Registry.OpenSubKey("Software\Microsoft\Windows\CurrentVersion\Uninstall",$False);
+            $UninstallKeys.GetSubKeyNames()|%{
+                $SubKey = $UninstallKeys.OpenSubKey($_,$False);
+                $DisplayName = $SubKey.GetValue("DisplayName");
+                If ($DisplayName.Length -gt 0){
+                    $Entry = $Base | Select-Object *
+                    $Entry.ComputerName = $ComputerName;
+                    $Entry.Name = $DisplayName.Trim();
+                    $Entry.Publisher = $SubKey.GetValue("Publisher");
+                    [ref]$ParsedInstallDate = Get-Date
+                    If ([DateTime]::TryParseExact($SubKey.GetValue("InstallDate"),"yyyyMMdd",$Null,[System.Globalization.DateTimeStyles]::None,$ParsedInstallDate)){
+                    $Entry.InstallDate = $ParsedInstallDate.Value
+                    }
+                    $Entry.EstimatedSize = [Math]::Round($SubKey.GetValue("EstimatedSize")/1KB,1);
+                    $Entry.Version = $SubKey.GetValue("DisplayVersion");
+                    [Void]$Results.Add($Entry);
+                }
+            }
+        }
+    }
+    $Results
+}
+
+
+Function Get-InstalledSoftware{
+    Param([String[]]$Computers)
+    If (!$Computers) {$Computers = $ENV:ComputerName}
+    $Base = New-Object PSObject;
+    $Base | Add-Member Noteproperty ComputerName -Value $Null;
+    $Base | Add-Member Noteproperty Name -Value $Null;
+    $Base | Add-Member Noteproperty Publisher -Value $Null;
+    $Base | Add-Member Noteproperty InstallDate -Value $Null;
+    $Base | Add-Member Noteproperty EstimatedSize -Value $Null;
+    $Base | Add-Member Noteproperty Version -Value $Null;
+    $Base | Add-Member Noteproperty Wow6432Node -Value $Null;
+    $Results =  New-Object System.Collections.Generic.List[System.Object];
+ 
+    ForEach ($ComputerName in $Computers){
+        $Registry = $Null;
+        Try{$Registry = [Microsoft.Win32.RegistryKey]::OpenRemoteBaseKey([Microsoft.Win32.RegistryHive]::LocalMachine,$ComputerName);}
+        Catch{Write-Host -ForegroundColor Red "$($_.Exception.Message)";}
+ 
+        If ($Registry){
+            $UninstallKeys = $Null;
+            $SubKey = $Null;
+            $UninstallKeys = $Registry.OpenSubKey("Software\Microsoft\Windows\CurrentVersion\Uninstall",$False);
+            $UninstallKeys.GetSubKeyNames()|%{
+                $SubKey = $UninstallKeys.OpenSubKey($_,$False);
+                $DisplayName = $SubKey.GetValue("DisplayName");
+                If ($DisplayName.Length -gt 0){
+                    $Entry = $Base | Select-Object *
+                    $Entry.ComputerName = $ComputerName;
+                    $Entry.Name = $DisplayName.Trim();
+                    $Entry.Publisher = $SubKey.GetValue("Publisher");
+                    [ref]$ParsedInstallDate = Get-Date
+                    If ([DateTime]::TryParseExact($SubKey.GetValue("InstallDate"),"yyyyMMdd",$Null,[System.Globalization.DateTimeStyles]::None,$ParsedInstallDate)){
+                    $Entry.InstallDate = $ParsedInstallDate.Value
+                    }
+                    $Entry.EstimatedSize = [Math]::Round($SubKey.GetValue("EstimatedSize")/1KB,1);
+                    $Entry.Version = $SubKey.GetValue("DisplayVersion");
+                    [Void]$Results.Add($Entry);
+                }
+            }
+ 
+                If ([IntPtr]::Size -eq 8){
+                $UninstallKeysWow6432Node = $Null;
+                $SubKeyWow6432Node = $Null;
+                $UninstallKeysWow6432Node = $Registry.OpenSubKey("Software\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall",$False);
+                    If ($UninstallKeysWow6432Node) {
+                        $UninstallKeysWow6432Node.GetSubKeyNames()|%{
+                        $SubKeyWow6432Node = $UninstallKeysWow6432Node.OpenSubKey($_,$False);
+                        $DisplayName = $SubKeyWow6432Node.GetValue("DisplayName");
+                        If ($DisplayName.Length -gt 0){
+                            $Entry = $Base | Select-Object *
+                            $Entry.ComputerName = $ComputerName;
+                            $Entry.Name = $DisplayName.Trim();
+                            $Entry.Publisher = $SubKeyWow6432Node.GetValue("Publisher");
+                            [ref]$ParsedInstallDate = Get-Date
+                            If ([DateTime]::TryParseExact($SubKeyWow6432Node.GetValue("InstallDate"),"yyyyMMdd",$Null,[System.Globalization.DateTimeStyles]::None,$ParsedInstallDate)){
+                            $Entry.InstallDate = $ParsedInstallDate.Value
+                            }
+                            $Entry.EstimatedSize = [Math]::Round($SubKeyWow6432Node.GetValue("EstimatedSize")/1KB,1);
+                            $Entry.Version = $SubKeyWow6432Node.GetValue("DisplayVersion");
+                            $Entry.Wow6432Node = $True;
+                            [Void]$Results.Add($Entry);
+                            }
+                        }
+                    }
+                }
+        }
+    }
+    $Results
+}
+
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+Software Inventory 2
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+foreach ($Rhost in get-content c:\Users\arasu\Desktop\hosts_list.txt) {
+  echo "Fecthing installed software list from $Rhost"
+  Get-InstalledSoftware  $Rhost | Export-CSV -NoTypeInformation "C:\Users\arasu\Desktop\test\$Rhost.csv";
+}
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+BAT file to combine all excel into a single excel
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+C:\Users\arasu\Desktop\Newfolder>copy *.csv combine.csv
+
+
+
+
+
+
+
+
+END**************************************************************************************************************************************
