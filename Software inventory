@@ -32,7 +32,7 @@ in Powershell ISE gefore running the Software inventory 2
 4)Load  another software iventory script 2 in powershell ISE and run it..This script will have input and and output path file of the list of host..
 5)After running the  software inventory the list of for 100 systems and not output will have 100 seperate excel files.Now
 run the BAT file to combine all CSV file into a single file..
-6)Now each excel fill have the hostname mentioned  as excel file name and will have neat list of all software from the system.
+6)Now the each excel fill have the hostname mentioned as excel file name and will have neat list of all software from the system in a single excel.
 7)Always run Powershell ISE with admin rights .
 
 
