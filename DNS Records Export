@@ -1,0 +1,10 @@
+#########http://sigkillit.com/2015/10/27/list-all-dns-records-with-powershell/
+########## This script works on windows server 2003 and windows server 2008..no need to run from DNS server.
+$DNSServer = "192.168.XX.XX"
+$Zones = @(Get-DnsServerZone -ComputerName $DNSServer)
+ForEach ($Zone in $Zones) {
+	Write-Host "`n$($Zone.ZoneName)" -ForegroundColor "Green"
+	$Results = $Zone | Get-DnsServerResourceRecord -ComputerName $DNSServer
+
+	echo $Results > C:\test\"$($Zone.ZoneName).txt"
+}
