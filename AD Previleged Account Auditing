@@ -1,32 +1,32 @@
 
 
-Ad Privillaged account Auditing
+###Ad Privillaged account Auditing
 
-Tested and worked in windows server 2008.
-Can change the inactive days account to 180 or 90.
+##Tested and worked in windows server 2008.
+##Can change the inactive days account to 180 or 90.
 
-Requirement
-Powershell script v3 or greater
-Script to check Powershell version
+##Requirement
+##Powershell script v3 or greater
+##Script to check Powershell version
 
-host
+##host
 
-PS C:\Windows\system32> host
+##PS C:\Windows\system32> host
 
-Name             : ConsoleHost
-Version          : 4.0
-InstanceId       : 00f33b3e-9daa-40bf-84f0-33d3af8ac24c
-UI               : System.Management.Automation.Internal.Host.InternalHos
-CurrentCulture   : en-IN
-CurrentUICulture : en-US
-PrivateData      : Microsoft.PowerShell.ConsoleHost+ConsoleColorProxy
-IsRunspacePushed : False
-Runspace         : System.Management.Automation.Runspaces.LocalRunspace
+##Name             : ConsoleHost
+##Version          : 4.0
+##InstanceId       : 00f33b3e-9daa-40bf-84f0-33d3af8ac24c
+##UI               : System.Management.Automation.Internal.Host.InternalHos
+##CurrentCulture   : en-IN
+##CurrentUICulture : en-US
+##PrivateData      : Microsoft.PowerShell.ConsoleHost+ConsoleColorProxy
+##IsRunspacePushed : False
+##Runspace         : System.Management.Automation.Runspaces.LocalRunspace
 
-Run the below command before running any Powershell script.
-Open Powershell or Powershell ISE by Run as Administrator
-PS C:\Windows\system32> set-executionpolicy -scope LocalMachine -executionPolicy unrestricted -force
-PS C:\Windows\system32> set-executionpolicy -scope Currentuser -executionPolicy unrestricted -force
+##Run the below command before running any Powershell script.
+##Open Powershell or Powershell ISE by Run as Administrator
+##PS C:\Windows\system32> set-executionpolicy -scope LocalMachine -executionPolicy unrestricted -force
+##PS C:\Windows\system32> set-executionpolicy -scope Currentuser -executionPolicy unrestricted -force
 
 --------------------------------------------------------------------------------------------------------------------------------
 
