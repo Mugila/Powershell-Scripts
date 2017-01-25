@@ -1,4 +1,4 @@
-#########  Script bring gui format of the out put
+#########  Script brings gui format of the out put
 Param ([switch]$NoWarning,[switch]$Debug)
 
 If ($Debug) {
